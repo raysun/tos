@@ -1,0 +1,8 @@
+# This is where you "hide" the sensitive files in case you plan on
+# posting your code online
+creds.py
+
+.idea
+venv_bot/
+.vscode/
+__pycache*
