@@ -29,7 +29,6 @@ class MyBot(commands.Bot):
         super().__init__(command_prefix=prefix,
                          description=description,
                          case_insensitive=True)
-        self.coc = coc_client
         # This instanciates the database class
         self.dbconn = BotDatabase(SQLITE_FILE)
 
