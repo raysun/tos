@@ -8,15 +8,12 @@ from discord.ext import commands
 description = "This is where you provide a concise description of your bot. Not sure if this is ever visible anywhere."
 
 # This is where you can select the prefix you'd like used for your bot commands
-prefix = "!"
+prefix = "/"
 
 # These are the cogs that you are using in your bot
-initial_extensions = (
-    "cogs.general",
-    "cogs.special",
-    "cogs.database_bg",
-    "cogs.war-reporter",
-)
+initial_extensions = [
+    "cogs.general"
+]
 
 # File path to your sqlite3 db file
 SQLITE_FILE = 'database/bot_database.db'
