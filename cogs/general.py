@@ -31,8 +31,8 @@ class General(commands.Cog):
             content = "You may not perform that action right now."
         await ctx.send(content)
 
-    @commands.command(name="cancel_game", aliases=["cancel", "cancelgame"])
-    async def cancel_game(self, ctx):
+    @commands.command(name="join_game", aliases=["join", "joingame", "enter", "entergame"])
+    async def join_game(self, ctx):
         game_data = self.bot.dbconn.get_active_game_data(ctx.guild.id)
         if (game_data != None and game_data["state"] == "waiting_on_players"):
             if (game_data["host_discord_id"] == ctx.author.id):
