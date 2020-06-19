@@ -10,18 +10,30 @@ class BotDatabase:
 
     def instantiate_db(self):
         """Method creates the database if they do not exist"""
-        create_player_table = ("CREATE TABLE IF NOT EXISTS coc_players "
-                               "(coc_tag text NOT NULL, "
-                               "coc_name text NOT NULL, "
-                               "coc_th integer NOT NULL, "
-                               "PRIMARY KEY(coc_tag))")
+        create_player_table = ("CREATE TABLE IF NOT EXISTS player_data "
+                               "(game_id bigint NOT NULL, "
+                               "name text NOT NULL, "
+                               "player_id INTEGER PRIMARY KEY NOT NULL AUTOINCREMENT"
+                               "discord_player_id bigint NOT NULL, "
+                               "game_number integer NOT NULL, "
+                               "role text NOT NULL, "
+                               "aligntment text NOT NULL, "
+                               "role_data integer NOT NULL, "
+                               "selected integer NOT NULL)")
         create_prefix_table = ("CREATE TABLE IF NOT EXISTS prefixes "
-                                 "(prefix text NOT NULL, "
-                                 "server bigint NOT NULL,"
+                                 "(server bigint NOT NULL UNIQUE, "
+                                 "prefix text NOT NULL,"
+                                 "PRIMARY KEY(server))")
+        create_active_game_table = ("CREATE TABLE IF NOT EXISTS game_data "
+                                 "(server bigint NOT NULL UNIQUE, "
+                                 "running boolean NOT NULL,"
+                                 "state text NOT NULL,"
+                                 "player_data_id bigint NOT NULL,"
                                  "PRIMARY KEY(server))")
 
         self.conn.cursor().execute(create_player_table)
         self.conn.cursor().execute(create_prefix_table)
+        self.conn.cursor().execute(create_active_game_table)
         self.conn.commit()
 
     def change_prefix(self, tuple_data):
@@ -49,3 +61,15 @@ class BotDatabase:
             return "/"
         else:
             return prefix["prefix"]
+
+    def get_active_game_data(self, server):
+        """Method gets all the regsitered users"""
+        server_tuple = (server,)
+        sql = "SELECT * FROM game_data WHERE server = ?"
+        cur = self.conn.cursor()
+        cur.execute(sql, server_tuple)
+        data_dict = cur.fetchone()
+        if data_dict == None:
+            return None
+        else:
+            return data_dict
