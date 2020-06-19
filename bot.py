@@ -5,7 +5,7 @@ from database.database import BotDatabase
 
 from discord.ext import commands
 
-description = "Hi. This is a bot for a game based off of Town of Salem. Yay."
+description = "Hi. This is a bot for a game based off of Town of Salem, and the well-known game Mafia. Yay."
 
 # This is where you can select the prefix you'd like used for your bot commands
 prefix = "!"
@@ -19,7 +19,12 @@ initial_extensions = [
 SQLITE_FILE = 'database/bot_database.db'
 
 def get_prefix(bot, msg):
-    return bot.dbconn.get_prefix(msg.guild.id)
+    prefix = bot.dbconn.get_prefix(msg.guild.id)
+    if prefix == None:
+        bot.dbconn.set_prefix("/", msg.guild.id)
+        return "/"
+    else:
+        return prefix
 
 
 class MyBot(commands.Bot):
