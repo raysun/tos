@@ -1,4 +1,5 @@
 import sqlite3
+from pprint import pprint
 
 
 class BotDatabase:
@@ -10,26 +11,25 @@ class BotDatabase:
 
     def instantiate_db(self):
         """Method creates the database if they do not exist"""
-        create_player_table = ("CREATE TABLE IF NOT EXISTS player_data "
-                               "(game_id bigint NOT NULL, "
-                               "name text NOT NULL, "
-                               "player_id INTEGER PRIMARY KEY NOT NULL AUTOINCREMENT"
-                               "discord_player_id bigint NOT NULL, "
-                               "game_number integer NOT NULL, "
-                               "role text NOT NULL, "
-                               "aligntment text NOT NULL, "
-                               "role_data integer NOT NULL, "
-                               "selected integer NOT NULL)")
+        create_player_table = """CREATE TABLE IF NOT EXISTS player 
+                               (player_id INTEGER PRIMARY KEY AUTOINCREMENT, 
+							   game_id bigint NOT NULL, 
+                               name text NOT NULL, 
+                               discord_player_id bigint NOT NULL, 
+                               game_number integer NOT NULL, 
+                               player_role text NOT NULL, 
+                               alignment text NOT NULL, 
+                               role_data integer NOT NULL, 
+                               selected integer NOT NULL)"""
         create_prefix_table = ("CREATE TABLE IF NOT EXISTS prefixes "
                                  "(server bigint NOT NULL UNIQUE, "
                                  "prefix text NOT NULL,"
                                  "PRIMARY KEY(server))")
-        create_active_game_table = ("CREATE TABLE IF NOT EXISTS game_data "
-                                 "(server bigint NOT NULL UNIQUE, "
-                                 "running boolean NOT NULL,"
+        create_active_game_table = ("CREATE TABLE IF NOT EXISTS game "
+                                 "(game_id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                 "server bigint NOT NULL UNIQUE, "
                                  "state text NOT NULL,"
-                                 "player_data_id bigint NOT NULL,"
-                                 "PRIMARY KEY(server))")
+                                 "host_discord_id bigint NOT NULL)")
 
         self.conn.cursor().execute(create_player_table)
         self.conn.cursor().execute(create_prefix_table)
@@ -42,10 +42,19 @@ class BotDatabase:
         self.conn.cursor().execute(sql, tuple_data)
         self.conn.commit()
 
-    def update_donation(self, tuple_data):
-        """Method updates the donation of the registered users"""
-        sql = ("INSERT INTO player_donation (update_date, coc_tag, coc_donation) "
-               "VALUES (?,?,?)")
+    def create_game(self, tuple_data):
+        sql = "REPLACE INTO game (server, state, host_discord_id) VALUES (?,?,?)"
+        self.conn.cursor().execute(sql, tuple_data)
+        self.conn.commit()
+
+    def cancel_game(self, server):
+        sql = "UPDATE game SET state = 'not_running' WHERE server = ?"
+        count = self.conn.cursor().execute(sql, (server,))
+        print(count.rowcount)
+        self.conn.commit()
+
+    def create_player(self, tuple_data):
+        sql = "REPLACE INTO game (game_id, name, discord_player_id, game_number, player_role, alignment, role_data, selected) VALUES (?,?,?,?,?,?,?,?)"
         self.conn.cursor().execute(sql, tuple_data)
         self.conn.commit()
         
@@ -65,11 +74,8 @@ class BotDatabase:
     def get_active_game_data(self, server):
         """Method gets all the regsitered users"""
         server_tuple = (server,)
-        sql = "SELECT * FROM game_data WHERE server = ?"
+        sql = "SELECT * FROM game WHERE server = ?"
         cur = self.conn.cursor()
         cur.execute(sql, server_tuple)
         data_dict = cur.fetchone()
-        if data_dict == None:
-            return None
-        else:
-            return data_dict
+        return data_dict
