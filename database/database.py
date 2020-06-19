@@ -45,7 +45,7 @@ class BotDatabase:
         cur.execute(sql, server_tuple)
         prefix = cur.fetchone()
         if prefix == None:
-            bot.dbconn.set_prefix(("/", server[0]))
+            self.change_prefix(("/", server[0]))
             return "/"
         else:
             return prefix[server[0]]
