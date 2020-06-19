@@ -40,7 +40,7 @@ class BotDatabase:
     def get_prefix(self, server):
         """Method gets all the regsitered users"""
         server_tuple = (server,)
-        sql = "SELECT prefix FROM prefixes WHERE server = ?"
+        sql = "SELECT * FROM prefixes WHERE server = ?"
         cur = self.conn.cursor()
         cur.execute(sql, server_tuple)
         prefix = cur.fetchone()
@@ -48,4 +48,4 @@ class BotDatabase:
             self.change_prefix(("/", server))
             return "/"
         else:
-            return prefix["server"]
+            return prefix["prefix"]
