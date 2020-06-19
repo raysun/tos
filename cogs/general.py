@@ -13,6 +13,13 @@ class General(commands.Cog):
         content = "Game Created. Just kidding."
         await ctx.send(content)
 
+    @commands.command(name="create_game", aliases=["prefix"])
+    async def create_game(self, ctx, newPrefix = None):
+        self.bot.dbconn.change_prefix((newPrefix, ctx.guild.id))
+        content = "Bot prefix changed to " + newPrefix
+
+        await ctx.send(content)
+
 
 def setup(bot):
     bot.add_cog(General(bot))

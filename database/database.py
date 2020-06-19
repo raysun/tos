@@ -14,21 +14,18 @@ class BotDatabase:
                                "coc_name text NOT NULL, "
                                "coc_th integer NOT NULL, "
                                "PRIMARY KEY(coc_tag))")
-        create_donation_table = ("CREATE TABLE IF NOT EXISTS player_donation "
-                                 "(update_date date NOT NULL, "
-                                 "coc_tag text NOT NULL, "
-                                 "coc_donation integer NOT NULL, "
-                                 "PRIMARY KEY (update_date, coc_tag), "
-                                 "CONSTRAINT coc_tag_ref FOREIGN KEY (coc_tag) "
-                                 "REFERENCES coc_players (coc_tag))")
+        create_prefix_table = ("CREATE TABLE IF NOT EXISTS prefixes "
+                                 "(prefix text NOT NULL, "
+                                 "server bigint NOT NULL,"
+                                 "PRIMARY KEY(server))")
 
         self.conn.cursor().execute(create_player_table)
-        self.conn.cursor().execute(create_donation_table)
+        self.conn.cursor().execute(create_prefix_table)
         self.conn.commit()
 
-    def register_user(self, tuple_data):
+    def change_prefix(self, tuple_data):
         """Method is used to register a user by taking a tuple of data to commit"""
-        sql = "INSERT INTO coc_players (coc_tag, coc_name, coc_th) VALUES (?,?,?)"
+        sql = "REPLACE INTO prefixes (prefix, server) VALUES (?,?)"
         self.conn.cursor().execute(sql, tuple_data)
         self.conn.commit()
 
@@ -39,10 +36,11 @@ class BotDatabase:
         self.conn.cursor().execute(sql, tuple_data)
         self.conn.commit()
         
-    def get_players(self):
+    def get_prefix(self, server):
         """Method gets all the regsitered users"""
-        sql = "SELECT coc_tag FROM coc_players"
+        server_tuple = (server,)
+        sql = "SELECT prefix FROM prefixes WHERE server = ?"
         cur = self.conn.cursor()
-        cur.execute(sql)
-        row = cur.fetchall()
-        return row
+        cur.execute(sql, server_tuple)
+        prefix = cur.fetchone()[0]
+        return prefix

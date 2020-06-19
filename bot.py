@@ -5,10 +5,10 @@ from database.database import BotDatabase
 
 from discord.ext import commands
 
-description = "This is where you provide a concise description of your bot. Not sure if this is ever visible anywhere."
+description = "Hi. This is a bot for a game based off of Town of Salem. Yay."
 
 # This is where you can select the prefix you'd like used for your bot commands
-prefix = "/"
+prefix = "!"
 
 # These are the cogs that you are using in your bot
 initial_extensions = [
@@ -18,12 +18,15 @@ initial_extensions = [
 # File path to your sqlite3 db file
 SQLITE_FILE = 'database/bot_database.db'
 
+def get_prefix(bot, msg):
+    return bot.dbconn.get_prefix(msg.guild.id)
+
 
 class MyBot(commands.Bot):
     # The __init__ method is a standard method seen at the beginning of most classes
     # it declares the variables that will be used throughout the class
     def __init__(self):
-        super().__init__(command_prefix=prefix,
+        super().__init__(command_prefix=get_prefix,
                          description=description,
                          case_insensitive=True)
         # This instanciates the database class
