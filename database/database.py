@@ -48,4 +48,4 @@ class BotDatabase:
             self.change_prefix(("/", server))
             return "/"
         else:
-            return prefix[server]
+            return prefix["server"]
