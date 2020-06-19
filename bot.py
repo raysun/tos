@@ -19,12 +19,7 @@ initial_extensions = [
 SQLITE_FILE = 'database/bot_database.db'
 
 def get_prefix(bot, msg):
-    prefix = bot.dbconn.get_prefix(msg.guild.id)
-    if prefix == None:
-        bot.dbconn.set_prefix("/", msg.guild.id)
-        return "/"
-    else:
-        return prefix
+    return bot.dbconn.get_prefix(msg.guild.id)
 
 
 class MyBot(commands.Bot):

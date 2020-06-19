@@ -4,6 +4,7 @@ import sqlite3
 class BotDatabase:
     def __init__(self, db_filepath):
         self.conn = sqlite3.connect(db_filepath)
+        self.conn.row_factory = sqlite3.Row
         self.conn.cursor().execute("PRAGMA foreign_keys = 1")  # Enables foreign keys
         self.instantiate_db()
 
@@ -42,5 +43,9 @@ class BotDatabase:
         sql = "SELECT prefix FROM prefixes WHERE server = ?"
         cur = self.conn.cursor()
         cur.execute(sql, server_tuple)
-        prefix = cur.fetchone()[0]
-        return prefix
+        prefix = cur.fetchone()
+        if prefix == None:
+            bot.dbconn.set_prefix(("/", server[0]))
+            return "/"
+        else:
+            return prefix[server[0]]
