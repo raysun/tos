@@ -11,7 +11,7 @@ class BotDatabase:
 
     def instantiate_db(self):
         """Method creates the database if they do not exist"""
-        create_player_table = """CREATE TABLE IF NOT EXISTS player 
+        create_player_table = """CREATE TABLE IF NOT EXISTS players 
                                (player_id INTEGER PRIMARY KEY AUTOINCREMENT, 
 							   game_id bigint NOT NULL, 
                                name text NOT NULL, 
@@ -42,10 +42,12 @@ class BotDatabase:
         self.conn.cursor().execute(sql, tuple_data)
         self.conn.commit()
 
-    def create_game(self, tuple_data):
+    def create_game(self, tuple_data, host_name):
         sql = "REPLACE INTO game (server, state, host_discord_id) VALUES (?,?,?)"
         self.conn.cursor().execute(sql, tuple_data)
         self.conn.commit()
+        game_data = self.get_active_game_data(tuple_data[0])
+        self.create_player((game_data["game_id"], host_name, tuple_data[2], 1, "placeholder_role", "placeholder_alignment", 0, 0))
 
     def cancel_game(self, server):
         sql = "UPDATE game SET state = 'not_running' WHERE server = ?"
@@ -54,8 +56,14 @@ class BotDatabase:
         self.conn.commit()
 
     def create_player(self, tuple_data):
-        sql = "REPLACE INTO game (game_id, name, discord_player_id, game_number, player_role, alignment, role_data, selected) VALUES (?,?,?,?,?,?,?,?)"
+        sql = "REPLACE INTO players (game_id, name, discord_player_id, game_number, player_role, alignment, role_data, selected) VALUES (?,?,?,?,?,?,?,?)"
         self.conn.cursor().execute(sql, tuple_data)
+        self.conn.commit()
+
+    def remove_player(self, player_id):
+        player_tuple = (player_id,)
+        sql = "DELETE FROM players WHERE discord_player_id = ?"
+        self.conn.cursor().execute(sql, player_tuple)
         self.conn.commit()
         
     def get_prefix(self, server):
@@ -79,3 +87,30 @@ class BotDatabase:
         cur.execute(sql, server_tuple)
         data_dict = cur.fetchone()
         return data_dict
+
+    def get_players_in_game(self, game_id):
+        """Method gets all the regsitered users"""
+        id_tuple = (game_id,)
+        sql = "SELECT * FROM players WHERE game_id = ?"
+        cur = self.conn.cursor()
+        cur.execute(sql, id_tuple)
+        player_dicts = cur.fetchall()
+        return player_dicts
+
+    def set_new_host(self, server):
+        server_tuple = (server,)
+        game_id = self.get_active_game_data(server)["game_id"]
+        id_tuple = (game_id,)
+        sql = "SELECT * FROM players WHERE game_id = ?"
+        cur = self.conn.cursor()
+        cur.execute(sql, id_tuple)
+        player_dict = cur.fetchone()
+        host_tuple = (player_dict["discord_player_id"], server)
+        sql = "UPDATE game SET host_discord_id = ? WHERE server = ?"
+        cur = self.conn.cursor()
+        cur.execute(sql, host_tuple)
+        self.conn.commit()
+        return player_dict
+
+    def get_player_count(self, game_id):
+        return len(self.get_players_in_game(game_id))
