@@ -52,8 +52,12 @@ class BotDatabase:
         self.create_player((game_data["game_id"], host_name, tuple_data[2], 1, "placeholder_role", "placeholder_alignment", 0, 0))
 
     def cancel_game(self, server):
+        game_id = self.get_id_from_server(server)
         sql = "UPDATE game SET state = 'not_running' WHERE server = ?"
-        count = self.conn.cursor().execute(sql, (server,))
+        self.conn.cursor().execute(sql, (server,))
+        self.conn.commit()
+        sql = "DELETE FROM players WHERE game_id = ?"
+        self.conn.cursor().execute(sql, (game_id,))
         self.conn.commit()
 
     def create_player(self, tuple_data):
@@ -124,10 +128,19 @@ class BotDatabase:
         """
         local_rolelist = consts.rolelist.copy()
         for i in range(consts.required_player_count):
-            pick_alignment = local_rolelist.pop(random.randint(0,len(local_rolelist)-1))
-            possible_roles = consts.allroles[pick_alignment]
-            pick_role = random.choice(possible_roles)
+            pick_role_possibilities = local_rolelist.pop(random.randint(0,len(local_rolelist)-1))
+            possible_roles = consts.allroles[pick_role_possibilities]
+            final_role = random.choice(possible_roles)
+            final_alignment = consts.role_to_alignment[final_role]
             sql = "UPDATE players SET player_role = ?, alignment = ? WHERE game_id = ? AND game_number = ?"
             cur = self.conn.cursor()
-            cur.execute(sql, (pick_role, pick_alignment, game_id, i + 1))
+            cur.execute(sql, (final_role, final_alignment, game_id, i + 1))
         self.conn.commit()
+
+    def get_id_from_server(self, server):
+        server_tuple = (server,)
+        sql = "SELECT * FROM game WHERE server = ?"
+        cur = self.conn.cursor()
+        cur.execute(sql, server_tuple)
+        data_dict = cur.fetchone()
+        return data_dict["game_id"]

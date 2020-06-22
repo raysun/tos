@@ -47,7 +47,7 @@ class General(commands.Cog):
                         found = True
                         break
                 if (not found):
-                    self.bot.dbconn.create_player((game_data["game_id"], ctx.author.name, ctx.author.id, player_count + 1, "placeholder_role", "placeholder_alignment", 0, 0))
+                    self.bot.dbconn.create_player((game_data["game_id"], ctx.author.name, ctx.author.id, self.bot.dbconn.get_player_count(game_data["game_id"]) + 1, "placeholder_role", "placeholder_alignment", 0, 0))
                     content = "Player " + ctx.author.name + " has joined the game."
                     if (self.bot.dbconn.get_player_count(game_data["game_id"]) == consts.required_player_count):
                         self.bot.dbconn.start_game(ctx.guild.id, game_data["game_id"])
