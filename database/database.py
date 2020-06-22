@@ -1,4 +1,6 @@
 import sqlite3
+import consts
+import random
 from pprint import pprint
 
 
@@ -52,7 +54,6 @@ class BotDatabase:
     def cancel_game(self, server):
         sql = "UPDATE game SET state = 'not_running' WHERE server = ?"
         count = self.conn.cursor().execute(sql, (server,))
-        print(count.rowcount)
         self.conn.commit()
 
     def create_player(self, tuple_data):
@@ -114,3 +115,19 @@ class BotDatabase:
 
     def get_player_count(self, game_id):
         return len(self.get_players_in_game(game_id))
+
+    def start_game(self, server, game_id):
+        """sql = "UPDATE game SET state = ? WHERE server = ?"
+        cur = self.conn.cursor()
+        cur.execute(sql, ("d1", server))
+        self.conn.commit()
+        """
+        local_rolelist = consts.rolelist.copy()
+        for i in range(consts.required_player_count):
+            pick_alignment = local_rolelist.pop(random.randint(0,len(local_rolelist)-1))
+            possible_roles = consts.allroles[pick_alignment]
+            pick_role = random.choice(possible_roles)
+            sql = "UPDATE players SET player_role = ?, alignment = ? WHERE game_id = ? AND game_number = ?"
+            cur = self.conn.cursor()
+            cur.execute(sql, (pick_role, pick_alignment, game_id, i + 1))
+        self.conn.commit()

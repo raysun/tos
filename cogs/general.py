@@ -1,6 +1,7 @@
 
 
 from discord.ext import commands
+import consts
 
 
 class General(commands.Cog):
@@ -48,7 +49,9 @@ class General(commands.Cog):
                 if (not found):
                     self.bot.dbconn.create_player((game_data["game_id"], ctx.author.name, ctx.author.id, player_count + 1, "placeholder_role", "placeholder_alignment", 0, 0))
                     content = "Player " + ctx.author.name + " has joined the game."
-
+                    if (self.bot.dbconn.get_player_count(game_data["game_id"]) == consts.required_player_count):
+                        self.bot.dbconn.start_game(ctx.guild.id, game_data["game_id"])
+                        content += "\nRequired player count has been reached, so the game has started."
             else:
                 content = "Ruh roh! We've run into an issue. There seems to be nobody in this game... please retry the command."
         else:
