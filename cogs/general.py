@@ -1,6 +1,7 @@
 
 
 from discord.ext import commands
+import discord
 import consts
 
 
@@ -9,7 +10,7 @@ class General(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="create_game", aliases=["create", "creategame"])
+    @commands.command(name="create_game", aliases=["create", "creategame", "cr"])
     async def create_game(self, ctx):
         game_data = self.bot.dbconn.get_active_game_data(ctx.guild.id)
         if (game_data == None or game_data["state"] == "not_running"):
@@ -19,11 +20,11 @@ class General(commands.Cog):
             content = "You may not create a game while another is currently running."
         await ctx.send(content)
 
-    @commands.command(name="cancel_game", aliases=["cancel", "cancelgame"])
+    @commands.command(name="cancel_game", aliases=["cancel", "cancelgame", "ca"])
     async def cancel_game(self, ctx):
         game_data = self.bot.dbconn.get_active_game_data(ctx.guild.id)
         if (game_data != None and game_data["state"] == "waiting_on_players"):
-            if (game_data["host_discord_id"] == ctx.author.id):
+            if game_data["host_discord_id"] == ctx.author.id:
                 self.bot.dbconn.cancel_game(ctx.guild.id)
                 content = "Game cancelled by " + ctx.author.name + "."
             else:
@@ -32,7 +33,7 @@ class General(commands.Cog):
             content = "You may not perform that action right now."
         await ctx.send(content)
 
-    @commands.command(name="join_game", aliases=["join", "joingame", "enter", "entergame"])
+    @commands.command(name="join_game", aliases=["join", "joingame", "j"])
     async def join_game(self, ctx):
         game_data = self.bot.dbconn.get_active_game_data(ctx.guild.id)
         if (game_data != None and game_data["state"] == "waiting_on_players"):
@@ -50,7 +51,24 @@ class General(commands.Cog):
                     self.bot.dbconn.create_player((game_data["game_id"], ctx.author.name, ctx.author.id, self.bot.dbconn.get_player_count(game_data["game_id"]) + 1, "placeholder_role", "placeholder_alignment", 0, 0))
                     content = "Player " + ctx.author.name + " has joined the game."
                     if (self.bot.dbconn.get_player_count(game_data["game_id"]) == consts.required_player_count):
-                        self.bot.dbconn.start_game(ctx.guild.id, game_data["game_id"])
+                        refresh_player_data = self.bot.dbconn.start_game(ctx.guild.id, game_data["game_id"])
+                        await ctx.guild.create_category("Mafia Game")
+                        for player_data in refresh_player_data:
+                            role_name = f"{player_data['game_number']}: {player_data['name']}"
+                            user = ctx.guild.get_member(player_data['discord_player_id'])
+                            await ctx.guild.create_role(name=role_name)
+                            await user.add_roles(discord.utils.get(ctx.guild.roles,name = role_name))
+                            await discord.utils.get(ctx.guild.roles,name = role_name).edit(hoist = True)
+                        for player_data in refresh_player_data:
+                            channel_overwrites = {}
+                            for other_player_data in refresh_player_data:
+                                if (other_player_data == player_data):
+                                    channel_overwrites[discord.utils.get(ctx.guild.roles,name = f"{other_player_data['game_number']}: {other_player_data['name']}")] = discord.PermissionOverwrite(read_messages = True)
+                                else:
+                                    channel_overwrites[discord.utils.get(ctx.guild.roles,name = f"{other_player_data['game_number']}: {other_player_data['name']}")] = discord.PermissionOverwrite(read_messages = False)
+                            await ctx.guild.create_text_channel(name=f"Player: {player_data['game_number']}",
+                                                                overwrites=channel_overwrites,
+                                                                category=discord.utils.get(ctx.guild.categories, name="Mafia Game"))
                         content += "\nRequired player count has been reached, so the game has started."
             else:
                 content = "Ruh roh! We've run into an issue. There seems to be nobody in this game... please retry the command."
@@ -58,7 +76,7 @@ class General(commands.Cog):
             content = "You may not perform that action right now."
         await ctx.send(content)
 
-    @commands.command(name="leave_game", aliases=["leave", "leavegame"])
+    @commands.command(name="leave_game", aliases=["leave", "leavegame", "l"])
     async def leave_game(self, ctx):
         game_data = self.bot.dbconn.get_active_game_data(ctx.guild.id)
         if (game_data != None and game_data["state"] == "waiting_on_players"):
@@ -100,7 +118,7 @@ class General(commands.Cog):
 
         await ctx.send(content)
 
-    @commands.command(name="get_players", aliases=["players"])
+    @commands.command(name="get_players", aliases=["players", "pl"])
     async def get_players(self, ctx):
         game_data = self.bot.dbconn.get_active_game_data(ctx.guild.id)
         if (game_data != None and game_data["state"] != "not_running"):

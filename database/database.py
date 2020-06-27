@@ -136,6 +136,7 @@ class BotDatabase:
             cur = self.conn.cursor()
             cur.execute(sql, (final_role, final_alignment, game_id, i + 1))
         self.conn.commit()
+        return self.get_players_in_game(game_id)
 
     def get_id_from_server(self, server):
         server_tuple = (server,)
@@ -144,3 +145,11 @@ class BotDatabase:
         cur.execute(sql, server_tuple)
         data_dict = cur.fetchone()
         return data_dict["game_id"]
+
+    def get_player_with_number(self, num, game_id):
+        id_tuple = (game_id, num)
+        sql = "SELECT * FROM players WHERE game_id = ? AND game_number = ?"
+        cur = self.conn.cursor()
+        cur.execute(sql, id_tuple)
+        player_dicts = cur.fetchone()
+        return player_dicts
