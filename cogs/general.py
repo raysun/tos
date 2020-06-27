@@ -56,9 +56,9 @@ class General(commands.Cog):
                         for player_data in refresh_player_data:
                             role_name = f"{player_data['game_number']}: {player_data['name']}"
                             user = ctx.guild.get_member(player_data['discord_player_id'])
-                            await ctx.guild.create_role(name=role_name)
-                            await user.add_roles(discord.utils.get(ctx.guild.roles,name = role_name))
-                            await discord.utils.get(ctx.guild.roles,name = role_name).edit(hoist = True)
+                            created_role = await ctx.guild.create_role(name=role_name)
+                            await user.add_roles(created_role)
+                            await created_role.edit(hoist = True)
                         for player_data in refresh_player_data:
                             channel_overwrites = {}
                             for other_player_data in refresh_player_data:
@@ -66,7 +66,7 @@ class General(commands.Cog):
                                     channel_overwrites[discord.utils.get(ctx.guild.roles,name = f"{other_player_data['game_number']}: {other_player_data['name']}")] = discord.PermissionOverwrite(read_messages = True)
                                 else:
                                     channel_overwrites[discord.utils.get(ctx.guild.roles,name = f"{other_player_data['game_number']}: {other_player_data['name']}")] = discord.PermissionOverwrite(read_messages = False)
-                            await ctx.guild.create_text_channel(name=f"Player: {player_data['game_number']}",
+                            await ctx.guild.create_text_channel(name=f"player-{player_data['game_number']}",
                                                                 overwrites=channel_overwrites,
                                                                 category=discord.utils.get(ctx.guild.categories, name="Mafia Game"))
                         content += "\nRequired player count has been reached, so the game has started."
@@ -147,6 +147,33 @@ class General(commands.Cog):
             content = "You may not perform that action right now."
         await ctx.send(content)
 
+    @commands.command(name="remove_game", aliases=["remove", "removegame"])
+    async def remove_game(self, ctx):
+        game_data = self.bot.dbconn.get_active_game_data(ctx.guild.id)
+        if game_data != None and game_data["state"] != "not_running" and game_data["state"] != "waiting_on_players" and game_data["host_discord_id"] == ctx.author.id:
+            content = "Wow! "
+            if discord.utils.get(ctx.guild.categories, name = "Mafia Game") != None:
+                await discord.utils.get(ctx.guild.categories, name="Mafia Game").delete()
+                content += "Category removed. "
+            player_data_list = self.bot.dbconn.get_players_in_game(self.bot.dbconn.get_id_from_server(ctx.guild.id))
+            for player_data in player_data_list:
+                if discord.utils.get(ctx.guild.roles, name = f"{player_data['game_number']}: {player_data['name']}") != None:
+                    await discord.utils.get(ctx.guild.roles, name = f"{player_data['game_number']}: {player_data['name']}").delete()
+                    content += "Player role removed. "
+                if discord.utils.get(ctx.guild.text_channels, name = f"player-{player_data['game_number']}") != None:
+                    await discord.utils.get(ctx.guild.text_channels, name = f"player-{player_data['game_number']}").delete()
+                    content += "Channel removed. "
+            if (game_data["state"] != "not_running"):
+                self.bot.dbconn.cancel_game(ctx.guild.id)
+                content += "Game cancelled."
+        else:
+            if game_data == None:
+                content = "There is no game currently logged in our database for this server, so this command cannot be run."
+            elif game_data["state"] == "not_running" or game_data["state"] == "waiting_on_players":
+                content = "This command can only be performed while the game is running. If there are excess roles or channels, something has gone wrong and you may have to manually remove them."
+            else:
+                content = "Only the host of the game is allowed to remove the game."
+        await ctx.send(content)
 
 def setup(bot):
     bot.add_cog(General(bot))

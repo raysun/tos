@@ -121,11 +121,10 @@ class BotDatabase:
         return len(self.get_players_in_game(game_id))
 
     def start_game(self, server, game_id):
-        """sql = "UPDATE game SET state = ? WHERE server = ?"
+        sql = "UPDATE game SET state = ? WHERE server = ?"
         cur = self.conn.cursor()
         cur.execute(sql, ("d1", server))
         self.conn.commit()
-        """
         local_rolelist = consts.rolelist.copy()
         for i in range(consts.required_player_count):
             pick_role_possibilities = local_rolelist.pop(random.randint(0,len(local_rolelist)-1))
