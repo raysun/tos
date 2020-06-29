@@ -37,41 +37,26 @@ class General(commands.Cog):
     async def join_game(self, ctx):
         game_data = self.bot.dbconn.get_active_game_data(ctx.guild.id)
         if (game_data != None and game_data["state"] == "waiting_on_players"):
-            player_data_list = self.bot.dbconn.get_players_in_game(game_data["game_id"])
-            if (player_data_list != None):
-                found = False
-                player_count = 0
-                for player_data in player_data_list:
-                    player_count += 1
-                    if (player_data["discord_player_id"]) == ctx.author.id:
-                        content = "You're already in this game, silly!"
-                        found = True
-                        break
-                if (not found):
-                    self.bot.dbconn.create_player((game_data["game_id"], ctx.author.name, ctx.author.id, self.bot.dbconn.get_player_count(game_data["game_id"]) + 1, "placeholder_role", "placeholder_alignment", 0, 0))
-                    content = "Player " + ctx.author.name + " has joined the game."
-                    if (self.bot.dbconn.get_player_count(game_data["game_id"]) == consts.required_player_count):
-                        refresh_player_data = self.bot.dbconn.start_game(ctx.guild.id, game_data["game_id"])
-                        await ctx.guild.create_category("Mafia Game")
-                        for player_data in refresh_player_data:
-                            role_name = f"{player_data['game_number']}: {player_data['name']}"
-                            user = ctx.guild.get_member(player_data['discord_player_id'])
-                            created_role = await ctx.guild.create_role(name=role_name)
-                            await user.add_roles(created_role)
-                            await created_role.edit(hoist = True)
-                        for player_data in refresh_player_data:
-                            channel_overwrites = {}
-                            for other_player_data in refresh_player_data:
-                                if (other_player_data == player_data):
-                                    channel_overwrites[discord.utils.get(ctx.guild.roles,name = f"{other_player_data['game_number']}: {other_player_data['name']}")] = discord.PermissionOverwrite(read_messages = True)
-                                else:
-                                    channel_overwrites[discord.utils.get(ctx.guild.roles,name = f"{other_player_data['game_number']}: {other_player_data['name']}")] = discord.PermissionOverwrite(read_messages = False)
-                            await ctx.guild.create_text_channel(name=f"player-{player_data['game_number']}",
-                                                                overwrites=channel_overwrites,
-                                                                category=discord.utils.get(ctx.guild.categories, name="Mafia Game"))
-                        content += "\nRequired player count has been reached, so the game has started."
+            if (self.bot.dbconn.get_player_count(game_data["game_id"]) == consts.required_player_count):
+                player_data_list = self.bot.dbconn.get_players_in_game(game_data["game_id"])
+                if (player_data_list != None):
+                    found = False
+                    player_count = 0
+                    for player_data in player_data_list:
+                        player_count += 1
+                        if (player_data["discord_player_id"]) == ctx.author.id:
+                            content = "You're already in this game, silly!"
+                            found = True
+                            break
+                    if (not found):
+                        self.bot.dbconn.create_player((game_data["game_id"], ctx.author.name, ctx.author.id, self.bot.dbconn.get_player_count(game_data["game_id"]) + 1, "placeholder_role", "placeholder_alignment", 0, 0))
+                        content = "Player " + ctx.author.name + " has joined the game."
+                        if (self.bot.dbconn.get_player_count(game_data["game_id"]) == consts.required_player_count):
+                            content += "\nRequired player count has been reached, so the game is ready to start."
+                else:
+                    content = "Ruh roh! We've run into an issue. There seems to be nobody in this game... please retry the command."
             else:
-                content = "Ruh roh! We've run into an issue. There seems to be nobody in this game... please retry the command."
+                content = "This game is full. Wait until another game is free or go to a different server to join a game."
         else:
             content = "You may not perform that action right now."
         await ctx.send(content)
@@ -174,6 +159,42 @@ class General(commands.Cog):
             else:
                 content = "Only the host of the game is allowed to remove the game."
         await ctx.send(content)
+
+        @commands.command(name="start_game", aliases=["start", "startgame", "s"])
+        async def start_game(self, ctx):
+            game_data = self.bot.dbconn.get_active_game_data(ctx.guild.id)
+            if (game_data != None and game_data["state"] == "waiting_on_players"):
+                if (self.bot.dbconn.get_player_count(game_data["game_id"]) == consts.required_player_count):
+                    if (ctx.author.id == game_data["host_discord_id"]):
+                        refresh_player_data = self.bot.dbconn.start_game(ctx.guild.id, game_data["game_id"])
+                        await ctx.guild.create_category("Mafia Game")
+                        for player_data in refresh_player_data:
+                            role_name = f"{player_data['game_number']}: {player_data['name']}"
+                            user = ctx.guild.get_member(player_data['discord_player_id'])
+                            created_role = await ctx.guild.create_role(name=role_name)
+                            await user.add_roles(created_role)
+                            await created_role.edit(hoist=True)
+                        for player_data in refresh_player_data:
+                            channel_overwrites = {}
+                            for other_player_data in refresh_player_data:
+                                if (other_player_data == player_data):
+                                    channel_overwrites[discord.utils.get(ctx.guild.roles,
+                                                                         name=f"{other_player_data['game_number']}: {other_player_data['name']}")] = discord.PermissionOverwrite(
+                                        read_messages=True)
+                                else:
+                                    channel_overwrites[discord.utils.get(ctx.guild.roles,
+                                                                         name=f"{other_player_data['game_number']}: {other_player_data['name']}")] = discord.PermissionOverwrite(
+                                        read_messages=False)
+                            await ctx.guild.create_text_channel(name=f"player-{player_data['game_number']}",
+                                                                overwrites=channel_overwrites,
+                                                                category=discord.utils.get(ctx.guild.categories, name="Mafia Game"))
+                    else:
+                        content = "Only the host of the game is allowed to start the game."
+                else:
+                    content = "Required player count to start the game has not yet been reached."
+            else:
+                content = "You may not perform that action right now."
+            await ctx.send(content)
 
 def setup(bot):
     bot.add_cog(General(bot))
